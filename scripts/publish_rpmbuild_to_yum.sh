@@ -55,8 +55,9 @@ rpmpath="${rpmbuild_path}/RPMS"
 arches=$(ls ${rpmpath})
 for arch in ${arches}; do
   dest=${yumpath}/RPMS/${arch}
-  sign_packages ${dest}
-  copy_to_repo_and_update ${rpmpath}/${arch} ${dest}
+  src=${rpmpath}/${arch}
+  sign_packages ${src}
+  copy_to_repo_and_update ${src} ${dest}
 done
 
 # Only commit if any RPMs have changed
