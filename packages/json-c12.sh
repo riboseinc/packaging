@@ -1,6 +1,5 @@
 #!/bin/bash
 
-yum install -y git createrepo
 package_name=json-c12
 
 base=$(cd "$(dirname "$0")"; pwd)
@@ -8,7 +7,7 @@ root=$(cd "${base}/../"; pwd)
 echo "base is ${base}"
 echo "root is ${root}"
 
-${root}/import_packaging_key.sh ${root}/ribose-packager.key
+${base}/_common.sh
 
 repo_name=rpm-specs
 repo_path=/usr/local/${repo_name}

@@ -1,15 +1,14 @@
 #!/bin/bash
 
-yum install -y git createrepo
+package_name=rnp
 
 base=$(cd "$(dirname "$0")"; pwd)
 root=$(cd "${base}/../"; pwd)
 echo "base is ${base}"
 echo "root is ${root}"
 
-${root}/import_packaging_key.sh ${root}/ribose-packager.key
+${base}/_common.sh
 
-package_name=rnp
 package_path=/usr/local/${package_name}
 if [ ! -d ${package_path} ] && [ ! -d ${package_path}/.git ]; then
   git clone --depth 1 https://github.com/riboseinc/${package_name} ${package_path}
