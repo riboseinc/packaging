@@ -11,7 +11,10 @@ errx() {
 }
 
 install_basic_packages() {
-  yum install -y git createrepo
+  yum install -y epel-release
+
+  yum install -y git createrepo automake autoconf libtool make gcc-c++ \
+    rpmdevtools wget epel-rpm-macros rpm-sign expect
 }
 
 set_creds_and_key() {
@@ -58,3 +61,6 @@ the_works() {
 
   ${scripts}/publish_rpmbuild_to_yum.sh
 }
+
+export RPMBUILD_FLAGS="-v -ba"
+
