@@ -18,7 +18,7 @@ install_basic_packages() {
 }
 
 set_creds_and_key() {
-  ${scripts}/set_yum_push_credentials.sh ${REPO_USERNAME} ${REPO_PASSWORD}
+  ${scripts}/set_yum_push_credentials.sh "${REPO_USERNAME}" "${REPO_PASSWORD}"
   ${scripts}/import_packaging_key.sh ${PACKAGER_KEY_PATH}
 }
 

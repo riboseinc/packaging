@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 readonly __progname=$(basename $0)
 
@@ -48,10 +48,10 @@ main() {
   container_key_path=/tmp/packager.key
   docker run -it \
     -v $(pwd):/usr/local/ribose-packaging \
-    -v ${PACKAGER_KEY_PATH}:${container_key_path} \
-    -e PACKAGER_KEY_PATH=/tmp/packager.key \
-    -e REPO_USERNAME=${REPO_USERNAME} \
-    -e REPO_PASSWORD=${REPO_PASSWORD} \
+    -v ${PACKAGER_KEY_PATH}:${container_key_path}:ro \
+    -e PACKAGER_KEY_PATH=${container_key_path} \
+    -e REPO_USERNAME="${REPO_USERNAME}" \
+    -e REPO_PASSWORD="${REPO_PASSWORD}" \
     centos:7 bash -l
 
 }
