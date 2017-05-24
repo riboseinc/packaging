@@ -50,6 +50,9 @@ the_works() {
   readonly local package_name=$1
   [ -z "${package_name}" ] && errx "no package_name provided"
 
+  # We mark our packages for el7 not el7.centos
+  sed -i 's/el7.centos/el7/' /etc/rpm/macros.dist
+
   install_basic_packages
   set_creds_and_key
   readonly local package_path="$(fetch_spec_from_ribose_specs ${package_name})"
