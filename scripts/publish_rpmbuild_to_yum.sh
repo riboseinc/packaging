@@ -57,6 +57,7 @@ for arch in ${arches}; do
   dest=${yumpath}/RPMS/${arch}
   src=${rpmpath}/${arch}
   sign_packages ${src}
+  copy_to_repo_and_update ${rpmpath}/noarch ${dest}
   copy_to_repo_and_update ${src} ${dest}
 done
 
