@@ -70,14 +70,21 @@ copy_to_repo_and_update ${rpmbuild_path}/SRPMS ${yumpath}/SRPMS/
 
 # Update RPMS repos
 rpmpath="${rpmbuild_path}/RPMS"
-arches=$(ls ${rpmpath})
+arches=$(ls ${yumpath}/RPMS)
+
 for arch in ${arches}; do
   dest=${yumpath}/RPMS/${arch}
   src=${rpmpath}/${arch}
   sign_packages ${src}
-  if [ -d ${rpmpath}/noarch ]; then
+
+  if [ -d ${src} ]; then
+    continue
+  fi
+
+  if [ "${arch}" != "noarch" ] && [ -d ${rpmpath}/noarch ]; then
     copy_to_repo_and_update ${rpmpath}/noarch ${dest}
   fi
+
   copy_to_repo_and_update ${src} ${dest}
 done
 
@@ -94,6 +101,8 @@ git config --global user.name "Ribose Packaging"
 git config --global user.email packages@ribose.com
 
 git add -A
+exec bash
+
 git commit -m "Updated RPMs and repodata"
 git push
 
