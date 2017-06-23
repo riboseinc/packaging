@@ -38,6 +38,7 @@ fetch_spec_from_ribose_specs() {
     pushd ${repo_path}
     git stash --quiet || errx "git stash"
     git pull --quiet || errx "git pull"
+    popd
   fi
 
   mkdir -p ${p_path} || errx "mkdir"

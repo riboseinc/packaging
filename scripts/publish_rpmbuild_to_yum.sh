@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -x
 
 readonly __progname=$(basename $0)
 
@@ -11,9 +11,27 @@ scripts=$(cd "${base}/../scripts"; pwd)
 max_file_size=100000000
 
 yumpath=/usr/local/yum
-if [ ! -d ${yumpath} ] && [ ! -d ${yumpath}/.git ]; then
-  git clone --depth 1 https://github.com/riboseinc/yum ${yumpath}
+if [ ! -d ${yumpath} ] || [ ! -d ${yumpath}/.git ]; then
+
+  mkdir -p ${yumpath}
+  ls -al ${yumpath}
+  echo "Cloning into ${yumpath}..." >&2
+  pushd ${yumpath}
+  git clone --depth 1 https://github.com/riboseinc/yum .
+  popd
+
+else
+
+  echo "Updating ${yumpath}..." >&2
+  pushd ${yumpath}
+  git stash
+  git checkout master
+  git reset --hard origin/master
+  git pull
+  popd
+
 fi
+
 pushd ${yumpath}
 
 copy_to_repo_and_update() {
@@ -57,7 +75,9 @@ for arch in ${arches}; do
   dest=${yumpath}/RPMS/${arch}
   src=${rpmpath}/${arch}
   sign_packages ${src}
-  copy_to_repo_and_update ${rpmpath}/noarch ${dest}
+  if [ -d ${rpmpath}/noarch ]; then
+    copy_to_repo_and_update ${rpmpath}/noarch ${dest}
+  fi
   copy_to_repo_and_update ${src} ${dest}
 done
 

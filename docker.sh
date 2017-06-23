@@ -51,11 +51,14 @@ main() {
 	[[ ! "$REPO_PASSWORD" ]] && \
 		usage
 
+  volume_name=ribose-yum
+  docker volume create ${volume_name}
 
   container_key_path=/tmp/packager.key
   docker run -it \
     -v $(pwd):/usr/local/ribose-packaging \
     -v ${PACKAGER_KEY_PATH}:${container_key_path}:ro \
+    -v ${volume_name}:/usr/local/yum \
     -e PACKAGER_KEY_PATH=${container_key_path} \
     -e REPO_USERNAME="${REPO_USERNAME}" \
     -e REPO_PASSWORD="${REPO_PASSWORD}" \
