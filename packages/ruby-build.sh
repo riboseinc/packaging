@@ -1,6 +1,6 @@
 #!/bin/bash
 
 base=$(cd "$(dirname "$0")/.."; pwd)
-. ${base}/scripts/_packaging.sh
+. ${base}/scripts/_common.sh
 the_works ruby-build
 

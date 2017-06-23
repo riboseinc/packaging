@@ -4,7 +4,9 @@
 
 ### Clone this repo
 
-`git clone https://github.com/riboseinc/packaging ~/src/packaging`
+```sh
+git clone https://github.com/riboseinc/packaging ~/src/packaging
+```
 
 ### Set up environment variables
 
@@ -18,11 +20,22 @@ EOF
 . source_env.sh
 ```
 
-### Run the docker container
+### Build, Sign, Upload Packages With One Command
 
 ``` sh
 cd ~/src/packaging
-./docker.sh
+./docker.sh $pkgname
+```
+
+
+
+## Advanced Steps For The Manual Person
+
+### Manually Run The Docker Container
+
+``` sh
+cd ~/src/packaging
+./docker.sh [options] $pkgname
 ```
 
 (optional) The `./docker.sh` script takes the following arguments:
@@ -33,16 +46,57 @@ cd ~/src/packaging
 -p <repo-password>
 ```
 
-### Build, sign, upload packages within the container
+This script also automatically creates a docker volume called `ribose-yum`
+to cache and manage the [https://github.com/riboseinc/yum](Ribose yum
+git repo) to prevent unnecessary re-pulls due to the size of it.
 
+
+### Manually Build, Sign, Upload Packages Within The Container
+
+In the container:
 ``` sh
-# /usr/local/ribose-packaging/packages/${package-name}
-# e.g.
-/usr/local/ribose-packaging/packages/json-c12.sh
+. /usr/local/ribose-packaging/_common.sh
+setup_env
+the_works ${package_name}
 ```
 
+### Manually Build A Package
 
-## Setting up the container environment manually (advanced)
+```sh
+. /usr/local/ribose-packaging/_common.sh
+setup_env
+
+# build the rpm
+/usr/local/ribose-packaging/packages/${package_name}.sh
+
+# sign packages at a destination
+sign_packages /root/rpmbuild/RPMS
+
+```
+
+### To Edit The Yum Repo (sorry this has to be manual)
+
+In the container:
+``` sh
+. /usr/local/ribose-packaging/_common.sh
+setup_env
+
+# pull in the latest yum repo into /usr/local/yum
+pull_yum
+
+cd /usr/local/yum
+
+# ... do your thing in /usr/local/yum/SRPMS
+update_yum_srpm
+
+# ... do your thing in /usr/local/yum/RPMS
+update_yum_rpm
+
+# commit changes and push repo
+commit_repo
+```
+
+### Setting up the container environment manually
 
 You need to manually enter the CAPITALIZED arguments if not using the
 default packaging scripts.
