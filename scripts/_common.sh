@@ -16,9 +16,11 @@ setup_env() {
 }
 
 update_repo() {
-  dest_path=$1
+  local dest_path=$1
 
+  echo "[update_repo] Updating yum repo at ${1}" >&2
   createrepo --update --delta ${dest_path}
+  echo "[update_repo] Signing repo at ${1}" >&2
   rm -f ${dest_path}/repodata/repomd.xml.asc
   gpg --detach-sign --armor ${dest_path}/repodata/repomd.xml
 }
@@ -31,7 +33,7 @@ install_basic_packages() {
 }
 
 set_creds_and_key() {
-  scripts=$(dirname $(readlink -f ${BASH_SOURCE}))
+  local scripts=$(dirname $(readlink -f ${BASH_SOURCE}))
   ${scripts}/set_yum_push_credentials.sh "${REPO_USERNAME}" "${REPO_PASSWORD}"
   ${scripts}/import_packaging_key.sh ${PACKAGER_KEY_PATH}
 }
@@ -50,8 +52,10 @@ fetch_spec_from_ribose_specs() {
     git clone --quiet --depth 1 https://github.com/riboseinc/${repo_name} ${repo_path} || errx "git clone"
   else
     pushd ${repo_path}
-    git stash --quiet || errx "git stash"
-    git pull --quiet || errx "git pull"
+    git clean -qdffx
+    git fetch
+    git checkout master
+    git --hard origin/master
     popd
   fi
 
@@ -84,23 +88,25 @@ the_works() {
 readonly yumpath=/usr/local/yum
 
 pull_yum() {
+  echo "[pull_yum] Going to update local yum repo" >&2
+
   if [ ! -d ${yumpath} ] || [ ! -d ${yumpath}/.git ]; then
 
+    echo "[pull_yum] Cloning into ${yumpath}..." >&2
     mkdir -p ${yumpath}
     ls -al ${yumpath}
-    echo "Cloning into ${yumpath}..." >&2
     pushd ${yumpath}
     git clone --depth 1 https://github.com/riboseinc/yum .
     popd
 
   else
 
-    echo "Updating ${yumpath}..." >&2
+    echo "[pull_yum] Updating ${yumpath}..." >&2
     pushd ${yumpath}
-    git stash
+    git clean -qdffx
+    git fetch
     git checkout master
     git reset --hard origin/master
-    git pull
     popd
 
   fi
@@ -113,32 +119,49 @@ readonly max_file_size=100000000
 readonly rpmbuild_path=/root/rpmbuild
 
 copy_to_repo_and_update() {
-  source_path=$1
-  dest_path=$2
+  local source_path=$1
+  local dest_path=$2
 
-  mkdir -p ${dest_path}
-  for f in ${source_path}/*.rpm; do
-    local size=$( wc -c "${f}" | awk '{print $1}' )
-    # If SRPM filesize exceeds max size, skip this step.
-    if [ ${size} -gt ${max_file_size} ]; then
-      echo "Skipping ${f} file since it is too large" >&2
-      continue
-    fi
+  echo "[copy_to_repo_and_update] source: ${source_path} dest: ${dest_path}" >&2
 
-    cp ${f} ${dest_path}
+  if [ -d ${source_path} ]; then
 
-  done
+    mkdir -p ${dest_path}
 
-  update_repo ${dest_path}
+    pushd ${source_path}
+    for f in $(find . -iname '*.rpm'); do
+      local size=$( wc -c "${f}" | awk '{print $1}' )
+      # If SRPM filesize exceeds max size, skip this step.
+      if [ ${size} -gt ${max_file_size} ]; then
+        echo "[copy_to_repo_and_update] Skipping ${f} file since it is too large" >&2
+        continue
+      fi
+
+      echo "[copy_to_repo_and_update] Copying ${f} to ${dest_path}" >&2
+      cp ${f} ${dest_path}
+
+    done
+    popd
+
+    update_repo ${dest_path}
+  fi
 }
 
 sign_packages() {
-  scripts=$(dirname $(readlink -f ${BASH_SOURCE}))
-  for f in ${1}/*.rpm; do
-    ${scripts}/rpmsign.exp ${f}
-  done
+  local scripts=$(dirname $(readlink -f ${BASH_SOURCE}))
+  local rpmpath=$1
+
+  if [ -d ${rpmpath} ]; then
+    pushd ${rpmpath}
+    for f in $(find . -iname '*.rpm'); do
+      echo "[sign_packages] ${f}" >&2
+      ${scripts}/rpmsign.exp ${f}
+    done
+    popd
+  fi
 }
 
+# SRPM directory always exist
 update_yum_srpm() {
   # Update SRPM repo
   sign_packages ${rpmbuild_path}/SRPMS
@@ -147,17 +170,23 @@ update_yum_srpm() {
 
 # Update RPMS repos
 update_yum_rpm() {
-  rpmpath="${rpmbuild_path}/RPMS"
-  arches=$(ls ${yumpath}/RPMS)
+  local rpmpath="${rpmbuild_path}/RPMS"
+  local arches=$(ls ${yumpath}/RPMS)
+
+  echo "[update_yum_rpm]" >&2
 
   for arch in ${arches}; do
-    dest=${yumpath}/RPMS/${arch}
-    src=${rpmpath}/${arch}
-    sign_packages ${src}
+    local src=${rpmpath}/${arch}
+    local dest=${yumpath}/RPMS/${arch}
 
-    if [ -d ${src} ]; then
+    echo "[update_yum_rpm] src:${src} dest:${dest}" >&2
+
+    if [ ! -d ${src} ]; then
+      echo "[update_yum_rpm] src:${src} doesn't exist, skip." >&2
       continue
     fi
+
+    sign_packages ${src}
 
     if [ "${arch}" != "noarch" ] && [ -d ${rpmpath}/noarch ]; then
       copy_to_repo_and_update ${rpmpath}/noarch ${dest}
@@ -171,7 +200,7 @@ update_yum_rpm() {
 commit_repo() {
   cd ${yumpath}
   # Only commit if any RPMs have changed
-  rpms_changed="$(git status | grep rpm)"
+  local rpms_changed="$(git status | grep rpm)"
 
   if [ "${rpms_changed}" == "" ]; then
     echo "No packages have changed, exit now."
