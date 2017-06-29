@@ -8,7 +8,14 @@ errx() {
 }
 
 usage() {
-	echo "usage: $__progname -k <packager-key-path> -u <repo-username> -p <repo-password> [ package-name ]"
+	echo "usage: $__progname -k <packager-key-path> -u <repo-username> -p <repo-password> -d [ package-name ]"
+  echo ""
+  echo "  Options:"
+  echo "  -d for dry run, not pushing to yum repo."
+  echo "  -k for the path to the packager key."
+  echo "  -u for git repo's username (via https)."
+  echo "  -p for git repo's password / app-token."
+  echo ""
   echo "  Arguments can also be set via environment variables: "
   echo "  - REPO_USERNAME"
   echo "  - REPO_PASSWORD"
@@ -60,23 +67,37 @@ main() {
 
   DOCKER_BASH_FLAGS=-l
 
-  if [ "$DOCKER_BASH_COMMAND" != "" ]; then
-    DOCKER_BASH_EXTRA="${DOCKER_BASH_COMMAND}"
-    DOCKER_BASH_FLAGS="${DOCKER_BASH_FLAGS} -c"
-  fi
-
   volume_name=ribose-yum
   docker volume create ${volume_name}
 
   container_key_path=/tmp/packager.key
-  docker run -it \
-    -v $(pwd):/usr/local/packaging \
-    -v ${PACKAGER_KEY_PATH}:${container_key_path}:ro \
-    -v ${volume_name}:/usr/local/yum \
-    -e PACKAGER_KEY_PATH=${container_key_path} \
-    -e REPO_USERNAME="${REPO_USERNAME}" \
-    -e REPO_PASSWORD="${REPO_PASSWORD}" \
-    centos:7 bash ${DOCKER_BASH_FLAGS} "${DOCKER_BASH_EXTRA}"
+
+  # TODO: clean this up...
+  if [ "$DOCKER_BASH_COMMAND" != "" ]; then
+    DOCKER_BASH_EXTRA="${DOCKER_BASH_COMMAND}"
+    DOCKER_BASH_FLAGS="${DOCKER_BASH_FLAGS} -c"
+
+    docker run -it \
+      -v $(pwd):/usr/local/packaging \
+      -v ${PACKAGER_KEY_PATH}:${container_key_path}:ro \
+      -v ${volume_name}:/usr/local/yum \
+      -e PACKAGER_KEY_PATH=${container_key_path} \
+      -e REPO_USERNAME="${REPO_USERNAME}" \
+      -e REPO_PASSWORD="${REPO_PASSWORD}" \
+      centos:7 bash ${DOCKER_BASH_FLAGS} "${DOCKER_BASH_EXTRA}"
+
+  else
+
+    docker run -it \
+      -v $(pwd):/usr/local/packaging \
+      -v ${PACKAGER_KEY_PATH}:${container_key_path}:ro \
+      -v ${volume_name}:/usr/local/yum \
+      -e PACKAGER_KEY_PATH=${container_key_path} \
+      -e REPO_USERNAME="${REPO_USERNAME}" \
+      -e REPO_PASSWORD="${REPO_PASSWORD}" \
+      centos:7 bash ${DOCKER_BASH_FLAGS}
+
+  fi
 
 }
 
