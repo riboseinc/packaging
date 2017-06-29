@@ -3,12 +3,12 @@
 readonly __progname=$(basename $0)
 
 errx() {
-	echo -e "$__progname: $@" >&2
-	exit 1
+  echo -e "$__progname: $@" >&2
+  exit 1
 }
 
 usage() {
-	echo "usage: $__progname -k <packager-key-path> -u <repo-username> -p <repo-password> -d [ package-name ]"
+  echo "usage: $__progname -k <packager-key-path> -u <repo-username> -p <repo-password> -d [ package-name ]"
   echo ""
   echo "  Options:"
   echo "  -d for dry run, not pushing to yum repo."
@@ -20,35 +20,35 @@ usage() {
   echo "  - REPO_USERNAME"
   echo "  - REPO_PASSWORD"
   echo "  - PACKAGER_KEY_PATH"
-	exit 1
+  exit 1
 }
 
 main() {
 
-	while getopts ":u:p:k:d" o; do
-		case "${o}" in
-		d)
-			readonly local DRYRUN=1
-			;;
-		k)
-			readonly local PACKAGER_KEY_PATH=${OPTARG}
-			;;
-		u)
-			readonly local REPO_USERNAME=${OPTARG}
-			;;
-		p)
-			readonly local REPO_PASSWORD=${OPTARG}
-			;;
-		*)
-			usage
-			;;
-		esac
-	done
+  while getopts ":u:p:k:d" o; do
+    case "${o}" in
+    d)
+      readonly local DRYRUN=1
+      ;;
+    k)
+      readonly local PACKAGER_KEY_PATH=${OPTARG}
+      ;;
+    u)
+      readonly local REPO_USERNAME=${OPTARG}
+      ;;
+    p)
+      readonly local REPO_PASSWORD=${OPTARG}
+      ;;
+    *)
+      usage
+      ;;
+    esac
+  done
 
   shift $(($OPTIND - 1))
 
   PACKAGE_NAME=$1
-	if [ "x$PACKAGE_NAME" != "x" ]; then
+  if [ "x$PACKAGE_NAME" != "x" ]; then
     DOCKER_BASH_COMMAND=". /usr/local/packaging/scripts/_common.sh; the_works ${1}"
 
     if [ "${DRYRUN}" = "1" ]; then
@@ -56,14 +56,14 @@ main() {
     fi
   fi
 
-	[[ ! "$PACKAGER_KEY_PATH" ]] && \
-		usage
+  [[ ! "$PACKAGER_KEY_PATH" ]] && \
+    usage
 
-	[[ ! "$REPO_USERNAME" ]] && \
-		usage
+  [[ ! "$REPO_USERNAME" ]] && \
+    usage
 
-	[[ ! "$REPO_PASSWORD" ]] && \
-		usage
+  [[ ! "$REPO_PASSWORD" ]] && \
+    usage
 
   DOCKER_BASH_FLAGS=-l
 
