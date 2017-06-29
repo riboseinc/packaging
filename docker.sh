@@ -18,8 +18,11 @@ usage() {
 
 main() {
 
-	while getopts ":u:p:k:" o; do
+	while getopts ":u:p:k:d" o; do
 		case "${o}" in
+		d)
+			readonly local DRYRUN=1
+			;;
 		k)
 			readonly local PACKAGER_KEY_PATH=${OPTARG}
 			;;
@@ -39,7 +42,11 @@ main() {
 
   PACKAGE_NAME=$1
 	if [ "x$PACKAGE_NAME" != "x" ]; then
-    DOCKER_BASH_EXTRA="-c /usr/local/ribose-packaging/packages/"${1}".sh"
+    DOCKER_BASH_COMMAND=". /usr/local/packaging/scripts/_common.sh; the_works ${1}"
+
+    if [ "${DRYRUN}" = "1" ]; then
+      DOCKER_BASH_COMMAND=". /usr/local/packaging/scripts/_common.sh; export DRYRUN=1; the_works ${1}; bash"
+    fi
   fi
 
 	[[ ! "$PACKAGER_KEY_PATH" ]] && \
@@ -51,18 +58,25 @@ main() {
 	[[ ! "$REPO_PASSWORD" ]] && \
 		usage
 
+  DOCKER_BASH_FLAGS=-l
+
+  if [ "$DOCKER_BASH_COMMAND" != "" ]; then
+    DOCKER_BASH_EXTRA="${DOCKER_BASH_COMMAND}"
+    DOCKER_BASH_FLAGS="${DOCKER_BASH_FLAGS} -c"
+  fi
+
   volume_name=ribose-yum
   docker volume create ${volume_name}
 
   container_key_path=/tmp/packager.key
   docker run -it \
-    -v $(pwd):/usr/local/ribose-packaging \
+    -v $(pwd):/usr/local/packaging \
     -v ${PACKAGER_KEY_PATH}:${container_key_path}:ro \
     -v ${volume_name}:/usr/local/yum \
     -e PACKAGER_KEY_PATH=${container_key_path} \
     -e REPO_USERNAME="${REPO_USERNAME}" \
     -e REPO_PASSWORD="${REPO_PASSWORD}" \
-    centos:7 bash -l ${DOCKER_BASH_EXTRA}
+    centos:7 bash ${DOCKER_BASH_FLAGS} "${DOCKER_BASH_EXTRA}"
 
 }
 

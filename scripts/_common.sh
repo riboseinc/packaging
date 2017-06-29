@@ -203,7 +203,7 @@ commit_repo() {
   local rpms_changed="$(git status | grep rpm)"
 
   if [ "${rpms_changed}" == "" ]; then
-    echo "No packages have changed, exit now."
+    echo "No packages have changed, exit now." >&2
     exit 0;
   fi
 
@@ -214,6 +214,11 @@ commit_repo() {
   git add -A
 
   git commit -m "Updated RPMs and repodata"
-  git push
+
+	if [ "$DRYRUN" != "1" ]; then
+    git push
+  else
+    echo "DRYRUN set to 1, NOT PUSHING CHANGES." >&2
+  fi
 }
 
