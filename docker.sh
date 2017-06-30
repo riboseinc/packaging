@@ -15,6 +15,7 @@ usage() {
   echo "  -k for the path to the packager key."
   echo "  -u for git repo's username (via https)."
   echo "  -p for git repo's password / app-token."
+  echo "  -h to display this message"
   echo ""
   echo "  Arguments can also be set via environment variables: "
   echo "  - REPO_USERNAME"
@@ -25,7 +26,7 @@ usage() {
 
 main() {
 
-  while getopts ":u:p:k:d" o; do
+  while getopts ":u:p:k:dh" o; do
     case "${o}" in
     d)
       readonly local DRYRUN=1
@@ -38,6 +39,9 @@ main() {
       ;;
     p)
       readonly local REPO_PASSWORD=${OPTARG}
+      ;;
+    h)
+      usage
       ;;
     *)
       usage

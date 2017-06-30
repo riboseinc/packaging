@@ -40,15 +40,22 @@ cd ~/src/packaging
 
 (optional) The `./docker.sh` script takes the following arguments:
 
-``` sh
--k <packager-key-path>
--u <repo-username>
--p <repo-password>
-```
+Options:
+* `-d` for dry run, not pushing to yum repo.
+* `-k` for the path to the packager key.
+* `-u` for git repo's username (via https).
+* `-p` for git repo's password / app-token.
+* `-h` to show help
 
-This script also automatically creates a docker volume called `ribose-yum`
-to cache and manage the [https://github.com/riboseinc/yum](Ribose yum
-git repo) to prevent unnecessary re-pulls due to the size of it.
+Arguments can also be set via environment variables:
+- `REPO_USERNAME`
+- `REPO_PASSWORD`
+- `PACKAGER_KEY_PATH`
+
+This script also automatically creates a docker volume called `ribose-yum`,
+for the caching and management of the
+[https://github.com/riboseinc/yum](Ribose yum git repo), in order to
+prevent unnecessary re-pulls due to the size of it.
 
 
 ### Manually Build, Sign, Upload Packages Within The Container
@@ -59,6 +66,7 @@ In the container:
 setup_env
 the_works ${package_name}
 ```
+
 
 ### Manually Build A Package
 
@@ -71,8 +79,8 @@ setup_env
 
 # sign packages at a destination
 sign_packages /root/rpmbuild/RPMS
-
 ```
+
 
 ### To Edit The Yum Repo (sorry this has to be manual)
 
