@@ -1,5 +1,11 @@
 # Packaging for the Ribose yum repo
 
+This is a set of scripts used to build packages for the
+[Ribose yum repo](https://github.com/riboseinc/yum). While these tools
+are in public (the built packages are public), they are not meant for
+external use.
+
+
 ## Basic steps for building + uploading packages
 
 ### Prerequisites
