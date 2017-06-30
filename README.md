@@ -62,7 +62,7 @@ prevent unnecessary re-pulls due to the size of it.
 
 In the container:
 ``` sh
-. /usr/local/ribose-packaging/_common.sh
+. /usr/local/packaging/_common.sh
 setup_env
 the_works ${package_name}
 ```
@@ -71,11 +71,11 @@ the_works ${package_name}
 ### Manually Build A Package
 
 ```sh
-. /usr/local/ribose-packaging/_common.sh
+. /usr/local/packaging/_common.sh
 setup_env
 
 # build the rpm
-/usr/local/ribose-packaging/packages/${package_name}.sh
+/usr/local/packaging/packages/${package_name}.sh
 
 # sign packages at a destination
 sign_packages /root/rpmbuild/RPMS
@@ -86,7 +86,7 @@ sign_packages /root/rpmbuild/RPMS
 
 In the container:
 ``` sh
-. /usr/local/ribose-packaging/_common.sh
+. /usr/local/packaging/_common.sh
 setup_env
 
 # pull in the latest yum repo into /usr/local/yum
