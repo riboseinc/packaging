@@ -5,7 +5,9 @@
 ### Prerequisites
 
 This repo only builds packages defined in
-the [Ribose rpm-specs repo](https://github.com/riboseinc/rpm-specs).
+the [Ribose rpm-specs repo](https://github.com/riboseinc/rpm-specs), and
+the packages built are pushed to the
+[Ribose yum repo](https://github.com/riboseinc/yum).
 
 Make sure you have provided your package information that repo under
 `$pkgname/` in the following format:
@@ -16,6 +18,8 @@ Make sure you have provided your package information that repo under
   for a NodeJS/npm package because the spec will be generated dynamically
   based on its `package.json` file.
 
+No changes are needed to this repo for adding, modifying or removing
+packages.
 
 ### Clone this repo
 
