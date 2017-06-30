@@ -54,7 +54,7 @@ Arguments can also be set via environment variables:
 
 This script also automatically creates a docker volume called `ribose-yum`,
 for the caching and management of the
-[https://github.com/riboseinc/yum](Ribose yum git repo), in order to
+[Ribose yum git repo](https://github.com/riboseinc/yum), in order to
 prevent unnecessary re-pulls due to the size of it.
 
 
