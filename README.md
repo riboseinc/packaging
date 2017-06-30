@@ -2,6 +2,21 @@
 
 ## Basic steps for building + uploading packages
 
+### Prerequisites
+
+This repo only builds packages defined in
+the [Ribose rpm-specs repo](https://github.com/riboseinc/rpm-specs).
+
+Make sure you have provided your package information that repo under
+`$pkgname/` in the following format:
+
+* `$pkgname/prepare.sh` is used to install all build-time dependencies
+  including all `BuildRequires` packages.
+* `$pkgname/$pkgname.spec` is the RPM spec file. This is not necessary
+  for a NodeJS/npm package because the spec will be generated dynamically
+  based on its `package.json` file.
+
+
 ### Clone this repo
 
 ```sh
