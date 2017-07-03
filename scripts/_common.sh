@@ -2,8 +2,8 @@
 
 errx() {
   readonly __progname=$(basename ${BASH_SOURCE})
-	echo -e "${__progname}: $@" >&2
-	exit 1
+  echo -e "${__progname}: $@" >&2
+  exit 1
 }
 
 setup_env() {
@@ -215,7 +215,7 @@ commit_repo() {
 
   git commit -m "Updated RPMs and repodata"
 
-	if [ "$DRYRUN" != "1" ]; then
+  if [ "$DRYRUN" != "1" ]; then
     git push
   else
     echo "DRYRUN set to 1, NOT PUSHING CHANGES." >&2
