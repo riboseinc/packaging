@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 readonly __progname=$(basename $0)
 
