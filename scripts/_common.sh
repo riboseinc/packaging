@@ -95,6 +95,7 @@ pull_yum() {
     echo "[pull_yum] Cloning into ${yumpath}..." >&2
     mkdir -p ${yumpath}
     ls -al ${yumpath}
+    rm -rf ${yumpath}/*
     pushd ${yumpath}
     git clone --depth 1 https://github.com/riboseinc/yum .
     popd
