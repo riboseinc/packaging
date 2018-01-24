@@ -82,7 +82,7 @@ the_works() {
   pull_yum
   update_yum_srpm
   update_yum_rpm
-  commit_repo
+  commit_repo "${package_name}"
 }
 
 readonly yumpath=/usr/local/yum
@@ -195,6 +195,7 @@ update_yum_rpm() {
 
 # run this in the git repo itself
 commit_repo() {
+  local package_name="${1?}"
   cd ${yumpath}
   # Only commit if any RPMs have changed
   local rpms_changed="$(git status | grep rpm)"
@@ -210,7 +211,7 @@ commit_repo() {
 
   git add -A
 
-  git commit -m "Updated RPMs and repodata"
+  git commit -m "${package_name}: Update RPMs and repodata"
 
   if [ "$DRYRUN" != "1" ]; then
     git push
