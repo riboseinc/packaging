@@ -182,18 +182,14 @@ update_yum_rpm() {
 
     echo "[update_yum_rpm] src:${src} dest:${dest}" >&2
 
-    if [ ! -d ${src} ]; then
-      echo "[update_yum_rpm] src:${src} doesn't exist, skip." >&2
-      continue
+    if [[ -d ${src} ]]; then
+      sign_packages ${src}
+      copy_to_repo_and_update ${src} ${dest}
     fi
-
-    sign_packages ${src}
 
     if [ "${arch}" != "noarch" ] && [ -d ${rpmpath}/noarch ]; then
       copy_to_repo_and_update ${rpmpath}/noarch ${dest}
     fi
-
-    copy_to_repo_and_update ${src} ${dest}
   done
 }
 
