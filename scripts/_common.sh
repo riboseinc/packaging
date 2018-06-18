@@ -38,20 +38,21 @@ set_creds_and_key() {
   ${scripts}/import_packaging_key.sh ${PACKAGER_KEY_PATH}
 }
 
+readonly rpmspec_repo=rpm-specs
+readonly rpmspec_path=/usr/local/${rpmspec_repo}
+
 fetch_spec_from_ribose_specs() {
   readonly local p_name=$1
+  readonly local p_path=$2
   [ -z "${p_name}" ] && errx "no p_name provided to $0"
+  [ -z "${p_path}" ] && errx "no p_path provided to $0"
 
-  # TODO: change rpm-specs repo to use a consistent name in prepare.sh
-  readonly local p_path=/usr/local/${p_name}
-  echo "${p_path}"
-
-  readonly local repo_name=rpm-specs
-  readonly local repo_path=/usr/local/${repo_name}
-  if [ ! -d ${repo_path} ] && [ ! -d ${repo_path}/.git ]; then
-    git clone --quiet --depth 1 https://github.com/riboseinc/${repo_name} ${repo_path} || errx "git clone"
+  # We fully clone so we can compare the commits to previous ones
+  # It's not a lot anyway
+  if [ ! -d ${rpmspec_path} ] && [ ! -d ${rpmspec_path}/.git ]; then
+    git clone --quiet https://github.com/riboseinc/${rpmspec_repo} ${rpmspec_path} || errx "git clone"
   else
-    pushd ${repo_path}
+    pushd ${rpmspec_path}
     git clean -qdffx
     git fetch
     git checkout master
@@ -59,8 +60,10 @@ fetch_spec_from_ribose_specs() {
     popd
   fi
 
-  mkdir -p ${p_path} || errx "mkdir"
-  cp -ra ${repo_path}/${p_name}/* ${p_path}/
+  cd ${rpmspec_path}
+  local commit="$(git log -1 --format=format:%H)"
+  echo "$commit"
+  cp -ra ${rpmspec_path}/${p_name}/* ${p_path}/
 
   return 0
 }
@@ -71,18 +74,29 @@ the_works() {
 
   setup_env
 
-  readonly local package_path="$(fetch_spec_from_ribose_specs ${package_name})"
-  [[ $? -ne 0 ]] && errx "failed to fetch spec"
-
+  # TODO: change rpm-specs repo to use a consistent name in prepare.sh
+  local package_path=/usr/local/${package_name}
+  mkdir -p ${package_path} || errx "mkdir package_path"
   echo "PACKAGE PATH IS ${package_path}"
+
+  local commit="$(fetch_spec_from_ribose_specs ${package_name} ${package_path})"
+  [[ $? -ne 0 ]] && errx "failed to fetch spec"
+  echo "RPMSPECS_COMMIT IS ${commit}"
+
+  echo "PACKAGE_PATH LS"
+  ls ${package_path} >&2
   pushd ${package_path} || errx "failed to enter package path"
-  ./prepare.sh || errx "failed to prepare"
+  ${package_path}/prepare.sh || errx "failed to prepare"
   popd
 
   pull_yum
+  local yum_commit=$(cat ${yumpath}/commits/${package_name})
+  check_if_newer_than_published "${commit}" "${yum_commit}"
+  [[ $? -ne 0 ]] && errx "Package build rejected ${package_name}: Commit (${commit}) not newer than one in yum repo (${yum_commit})!"
+
   update_yum_srpm
   update_yum_rpm
-  commit_repo "${package_name}"
+  commit_repo "${package_name}" "${commit}"
 }
 
 readonly yumpath=/usr/local/yum
@@ -111,6 +125,30 @@ pull_yum() {
     popd
 
   fi
+}
+
+check_if_newer_than_published() {
+  local rpm_spec_commit=$1
+  local yum_repo_commit=$2
+  [ -z "${rpm_spec_commit}" ] && errx "no rpm_spec_commit provided"
+  [ -z "${yum_repo_commit}" ] && errx "no yum_repo_commit provided"
+
+  pushd ${rpmspec_path}
+  # Commits are same, no need to re-build
+  if [ "${yum_repo_commit}" == "${rpm_spec_commit}" ]; then
+    popd
+    return 1
+  fi
+
+  # Check if commit is an ancestor
+  git merge-base --is-ancestor ${yum_repo_commit} ${rpm_spec_commit}
+  if [ $? -ne 0 ]; then
+    popd
+    return 1
+  fi
+
+  popd
+  return 0
 }
 
 # TODO: make this script understand whether to push SRPMS or not. Erlang SRPM
@@ -196,6 +234,8 @@ update_yum_rpm() {
 # run this in the git repo itself
 commit_repo() {
   local package_name="${1?}"
+  local commit="${2?}"
+
   cd ${yumpath}
   # Only commit if any RPMs have changed
   local rpms_changed="$(git status | grep rpm)"
@@ -208,6 +248,8 @@ commit_repo() {
   # Do the git commit
   git config --global user.name "Ribose Packaging"
   git config --global user.email packages@ribose.com
+
+  echo "${commit}" > ${yumpath}/commits/${package_name}
 
   git add -A
 
