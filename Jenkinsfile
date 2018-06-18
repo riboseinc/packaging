@@ -10,18 +10,16 @@ node("${env.NODE}") {
     }
 
     // Checkout https://github.com/riboseinc/packaging
-    /*
-    stage('Checkout') {
-      checkout([
-        $class: 'GitSCM',
-        branches: [[name: '*/master']],
-        doGenerateSubmoduleConfigurations: false,
-        extensions: [],
-        submoduleCfg: [],
-        userRemoteConfigs: [[url: 'https://github.com/riboseinc/rpm-specs']]
-      ])
-    }
-    */
+    // stage('Checkout') {
+    //   checkout([
+    //     $class: 'GitSCM',
+    //     branches: [[name: '*/master']],
+    //     doGenerateSubmoduleConfigurations: false,
+    //     extensions: [],
+    //     submoduleCfg: [],
+    //     userRemoteConfigs: [[url: 'https://github.com/riboseinc/rpm-specs']]
+    //   ])
+    // }
 
     // Find out which package was updated = PKGNAME
     stage('Find updated packages') {
@@ -35,7 +33,7 @@ node("${env.NODE}") {
       dir("yum-repo") {
         checkout([
           $class: 'GitSCM',
-          branches: [[name: '*/branchName']],
+          branches: [[name: '*/master']],
           doGenerateSubmoduleConfigurations: false,
           extensions: [
               [$class: 'SparseCheckoutPaths',  sparseCheckoutPaths:[[$class:'SparseCheckoutPath', path:'commits/']]],
