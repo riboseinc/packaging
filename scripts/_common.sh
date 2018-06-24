@@ -90,9 +90,12 @@ the_works() {
   popd
 
   pull_yum
-  local yum_commit=$(cat ${yumpath}/commits/${package_name})
-  check_if_newer_than_published "${commit}" "${yum_commit}"
-  [[ $? -ne 0 ]] && errx "Package build rejected ${package_name}: Commit (${commit}) not newer than one in yum repo (${yum_commit})!"
+  # Compare commits only if we already have a package
+  if [ -f ${yumpath}/commits/${package_name} ]; then
+    local yum_commit=$(cat ${yumpath}/commits/${package_name})
+    check_if_newer_than_published "${commit}" "${yum_commit}"
+    [[ $? -ne 0 ]] && errx "Package build rejected ${package_name}: Commit (${commit}) not newer than one in yum repo (${yum_commit})!"
+  fi
 
   update_yum_srpm
   update_yum_rpm
