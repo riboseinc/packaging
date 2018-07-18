@@ -1,9 +1,9 @@
 #!/bin/bash
 
-readonly __progname=$(basename $0)
+readonly __progname=$(basename "$0")
 
 errx() {
-  echo -e "$__progname: $@" >&2
+  echo -e "$__progname: $*" >&2
   exit 1
 }
 
@@ -80,28 +80,16 @@ main() {
   if [ "$DOCKER_BASH_COMMAND" != "" ]; then
     DOCKER_BASH_EXTRA="${DOCKER_BASH_COMMAND}"
     DOCKER_BASH_FLAGS="${DOCKER_BASH_FLAGS} -c"
-
-    docker run -it \
-      -v $(pwd):/usr/local/packaging \
-      -v ${PACKAGER_KEY_PATH}:${container_key_path}:ro \
-      -v ${volume_name}:/usr/local/yum \
-      -e PACKAGER_KEY_PATH=${container_key_path} \
-      -e REPO_USERNAME="${REPO_USERNAME}" \
-      -e REPO_PASSWORD="${REPO_PASSWORD}" \
-      centos:7 bash ${DOCKER_BASH_FLAGS} "${DOCKER_BASH_EXTRA}"
-
-  else
-
-    docker run -it \
-      -v $(pwd):/usr/local/packaging \
-      -v ${PACKAGER_KEY_PATH}:${container_key_path}:ro \
-      -v ${volume_name}:/usr/local/yum \
-      -e PACKAGER_KEY_PATH=${container_key_path} \
-      -e REPO_USERNAME="${REPO_USERNAME}" \
-      -e REPO_PASSWORD="${REPO_PASSWORD}" \
-      centos:7 bash ${DOCKER_BASH_FLAGS}
-
   fi
+
+  docker run -it \
+          -v "$(pwd)":/usr/local/packaging \
+          -v "${PACKAGER_KEY_PATH}":"${container_key_path}":ro \
+          -v ${volume_name}:/usr/local/yum \
+          -e PACKAGER_KEY_PATH=${container_key_path} \
+          -e REPO_USERNAME="${REPO_USERNAME}" \
+          -e REPO_PASSWORD="${REPO_PASSWORD}" \
+          centos:7 bash ${DOCKER_BASH_FLAGS} "${DOCKER_BASH_EXTRA}"
 
 }
 
