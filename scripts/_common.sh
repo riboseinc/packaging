@@ -1,8 +1,12 @@
 #!/bin/bash -x
 
+# shellcheck disable=SC2155
+# shellcheck disable=SC2164
+
 errx() {
-  readonly __progname=$(basename ${BASH_SOURCE})
-  echo -e "${__progname}: $@" >&2
+  readonly __progname=$(basename "${BASH_SOURCE}")
+  echo -e "${__progname}: $*" >&2
+  # return 1
   exit 1
 }
 
@@ -19,10 +23,10 @@ update_repo() {
   local dest_path=$1
 
   echo "[update_repo] Updating yum repo at ${1}" >&2
-  createrepo --update --delta ${dest_path}
+  createrepo --update --delta "${dest_path}"
   echo "[update_repo] Signing repo at ${1}" >&2
-  rm -f ${dest_path}/repodata/repomd.xml.asc
-  gpg --detach-sign --armor ${dest_path}/repodata/repomd.xml
+  rm -f "${dest_path}/repodata/repomd.xml.asc"
+  gpg --detach-sign --armor "${dest_path}/repodata/repomd.xml"
 }
 
 install_basic_packages() {
@@ -33,13 +37,14 @@ install_basic_packages() {
 }
 
 set_creds_and_key() {
-  local scripts=$(dirname $(readlink -f ${BASH_SOURCE}))
-  ${scripts}/set_yum_push_credentials.sh "${REPO_USERNAME}" "${REPO_PASSWORD}"
-  ${scripts}/import_packaging_key.sh ${PACKAGER_KEY_PATH}
+  local scripts=$(dirname "$(readlink -f "${BASH_SOURCE}")")
+  "${scripts}"/set_yum_push_credentials.sh "${REPO_USERNAME}" "${REPO_PASSWORD}"
+  "${scripts}"/import_packaging_key.sh "${PACKAGER_KEY_PATH}"
 }
 
-readonly rpmspec_repo=rpm-specs
-readonly rpmspec_path=/usr/local/${rpmspec_repo}
+readonly rpmspec_repo_prefix=rpm-spec-
+readonly rpmspec_path=/usr/local/rpm-specs/package
+readonly rpmspecs_path=/usr/local/rpm-specs
 
 fetch_spec_from_ribose_specs() {
   readonly local p_name=$1
@@ -47,54 +52,63 @@ fetch_spec_from_ribose_specs() {
   [ -z "${p_name}" ] && errx "no p_name provided to $0"
   [ -z "${p_path}" ] && errx "no p_path provided to $0"
 
+  local rpmspec_package_name=${rpmspec_repo_prefix}${p_name}
+
   # We fully clone so we can compare the commits to previous ones
   # It's not a lot anyway
   if [ ! -d ${rpmspec_path} ] && [ ! -d ${rpmspec_path}/.git ]; then
-    git clone --quiet https://github.com/riboseinc/${rpmspec_repo} ${rpmspec_path} || errx "git clone"
+    git clone --quiet \
+	    https://github.com/riboseinc/"${rpmspec_package_name}" \
+	    "${rpmspec_path}" || errx "git clone"
   else
-    pushd ${rpmspec_path}
-    git clean -qdffx
-    git fetch
-    git checkout master
-    git --hard origin/master
-    popd
+    pushd "${rpmspec_path}" && \
+	    git clean -qdffx && \
+	    git fetch && \
+	    git checkout master && \
+	    git --hard origin/master && \
+	    popd
   fi
 
-  cd ${rpmspec_path}
+  cd "${rpmspec_path}"
+  git submodule update --init >/dev/null
+  cp -ra "${rpmspec_path}/common"/* "${rpmspecs_path}/" || return 1
+
   local commit="$(git log -1 --format=format:%H)"
   echo "$commit"
-  cp -ra ${rpmspec_path}/${p_name}/* ${p_path}/
-
-  return 0
+  cp -ra "${rpmspec_path}"/* "${p_path}/" || return 1
 }
 
 the_works() {
   readonly local package_name=$1
-  [ -z "${package_name}" ] && errx "no package_name provided"
+  [[ -z "${package_name}" ]] && errx "no package_name provided"
 
   setup_env
 
   # TODO: change rpm-specs repo to use a consistent name in prepare.sh
   local package_path=/usr/local/${package_name}
-  mkdir -p ${package_path} || errx "mkdir package_path"
-  echo "PACKAGE PATH IS ${package_path}"
+  mkdir -p "${package_path}" || errx "mkdir package_path"
+  echo "PACKAGE_PATH=${package_path}"
 
-  local commit="$(fetch_spec_from_ribose_specs ${package_name} ${package_path})"
+  local commit
+  commit="$(fetch_spec_from_ribose_specs "${package_name}" "${package_path}")"
+
   [[ $? -ne 0 ]] && errx "failed to fetch spec"
-  echo "RPMSPECS_COMMIT IS ${commit}"
 
-  echo "PACKAGE_PATH LS"
-  ls ${package_path} >&2
-  pushd ${package_path} || errx "failed to enter package path"
-  ${package_path}/prepare.sh || errx "failed to prepare"
+  echo "RPMSPEC_COMMIT=${commit}"
+  echo "PACKAGE_PATH LS:"
+  ls "${package_path}"
+
+  pushd "${package_path}" || errx "failed to enter package path"
+  "${package_path}"/prepare.sh || errx "failed to prepare"
   popd
 
   pull_yum
+
   # Compare commits only if we already have a package
-  if [ -f ${yumpath}/commits/${package_name} ]; then
-    local yum_commit=$(cat ${yumpath}/commits/${package_name})
-    check_if_newer_than_published "${commit}" "${yum_commit}"
-    [[ $? -ne 0 ]] && errx "Package build rejected ${package_name}: Commit (${commit}) not newer than one in yum repo (${yum_commit})!"
+  if [[ -f "${yumpath}/commits/${package_name}" ]]; then
+    local yum_commit=$(cat "${yumpath}/commits/${package_name}")
+    check_if_newer_than_published "${commit}" "${yum_commit}" || \
+      errx "Package build rejected ${package_name}: Commit (${commit}) not newer than one in yum repo (${yum_commit})!"
   fi
 
   update_yum_srpm
@@ -112,15 +126,15 @@ pull_yum() {
     echo "[pull_yum] Cloning into ${yumpath}..." >&2
     mkdir -p ${yumpath}
     ls -al ${yumpath}
-    rm -rf ${yumpath}/*
-    pushd ${yumpath}
+    rm -rf "${yumpath}"/*
+    pushd "${yumpath}"
     git clone --depth 1 https://github.com/riboseinc/yum .
     popd
 
   else
 
     echo "[pull_yum] Updating ${yumpath}..." >&2
-    pushd ${yumpath}
+    pushd "${yumpath}"
     git clean -qdffx
     git fetch
     git checkout master
@@ -144,8 +158,8 @@ check_if_newer_than_published() {
   fi
 
   # Check if commit is an ancestor
-  git merge-base --is-ancestor ${yum_repo_commit} ${rpm_spec_commit}
-  if [ $? -ne 0 ]; then
+  git merge-base --is-ancestor "${yum_repo_commit}" "${rpm_spec_commit}"
+  if [[ $? -ne 0 ]]; then
     popd
     return 1
   fi
@@ -166,38 +180,38 @@ copy_to_repo_and_update() {
 
   echo "[copy_to_repo_and_update] source: ${source_path} dest: ${dest_path}" >&2
 
-  if [ -d ${source_path} ]; then
+  if [ -d "${source_path}" ]; then
 
-    mkdir -p ${dest_path}
+    mkdir -p "${dest_path}"
 
-    pushd ${source_path}
+    pushd "${source_path}"
     for f in $(find . -iname '*.rpm'); do
       local size=$( wc -c "${f}" | awk '{print $1}' )
       # If SRPM filesize exceeds max size, skip this step.
-      if [ ${size} -gt ${max_file_size} ]; then
+      if [[ "${size}" -gt "${max_file_size}" ]]; then
         echo "[copy_to_repo_and_update] Skipping ${f} file since it is too large" >&2
         continue
       fi
 
       echo "[copy_to_repo_and_update] Copying ${f} to ${dest_path}" >&2
-      cp ${f} ${dest_path}
+      cp "${f}" "${dest_path}"
 
     done
     popd
 
-    update_repo ${dest_path}
+    update_repo "${dest_path}"
   fi
 }
 
 sign_packages() {
-  local scripts=$(dirname $(readlink -f ${BASH_SOURCE}))
+  local scripts=$(dirname "$(readlink -f "${BASH_SOURCE}")")
   local rpmpath=$1
 
-  if [ -d ${rpmpath} ]; then
-    pushd ${rpmpath}
+  if [ -d "${rpmpath}" ]; then
+    pushd "${rpmpath}"
     for f in $(find . -iname '*.rpm'); do
       echo "[sign_packages] ${f}" >&2
-      ${scripts}/rpmsign.exp ${f}
+      "${scripts}/rpmsign.exp" "${f}"
     done
     popd
   fi
@@ -224,12 +238,12 @@ update_yum_rpm() {
     echo "[update_yum_rpm] src:${src} dest:${dest}" >&2
 
     if [[ -d ${src} ]]; then
-      sign_packages ${src}
-      copy_to_repo_and_update ${src} ${dest}
+      sign_packages "${src}"
+      copy_to_repo_and_update "${src}" "${dest}"
     fi
 
-    if [ "${arch}" != "noarch" ] && [ -d ${rpmpath}/noarch ]; then
-      copy_to_repo_and_update ${rpmpath}/noarch ${dest}
+    if [ "${arch}" != "noarch" ] && [ -d "${rpmpath}/noarch" ]; then
+      copy_to_repo_and_update ${rpmpath}/noarch "${dest}"
     fi
   done
 }
@@ -252,7 +266,7 @@ commit_repo() {
   git config --global user.name "Ribose Packaging"
   git config --global user.email packages@ribose.com
 
-  echo "${commit}" > ${yumpath}/commits/${package_name}
+  echo "${commit}" > "${yumpath}/commits/${package_name}"
 
   git add -A
 
@@ -264,4 +278,3 @@ commit_repo() {
     echo "DRYRUN set to 1, NOT PUSHING CHANGES." >&2
   fi
 }
-
