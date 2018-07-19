@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 readonly __progname=$(basename "$0")
 
 errx() {
