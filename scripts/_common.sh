@@ -73,8 +73,8 @@ fetch_spec_from_ribose_specs() {
   git submodule update --init >/dev/null
   cp -ra "${rpmspec_path}/common"/* "${rpmspecs_path}/" || return 1
 
-  local commit="$(git log -1 --format=format:%H)"
-  echo "$commit"
+  local package_spec_commit="$(git log -1 --format=format:%H)"
+  echo "$package_spec_commit"
   cp -ra "${rpmspec_path}"/* "${p_path}/" || return 1
 }
 
@@ -89,12 +89,12 @@ the_works() {
   mkdir -p "${package_path}" || errx "mkdir package_path"
   echo "PACKAGE_PATH=${package_path}"
 
-  local commit
-  commit="$(fetch_spec_from_ribose_specs "${package_name}" "${package_path}")"
+  local package_spec_commit
+  package_spec_commit="$(fetch_spec_from_ribose_specs "${package_name}" "${package_path}")"
 
   [[ $? -ne 0 ]] && errx "failed to fetch spec"
 
-  echo "RPMSPEC_COMMIT=${commit}"
+  echo "RPMSPEC_COMMIT=${package_spec_commit}"
   echo "PACKAGE_PATH LS:"
   ls "${package_path}"
 
@@ -107,13 +107,21 @@ the_works() {
   # Compare commits only if we already have a package
   if [[ -f "${yumpath}/commits/${package_name}" ]]; then
     local yum_commit=$(cat "${yumpath}/commits/${package_name}")
-    check_if_newer_than_published "${commit}" "${yum_commit}" || \
-      errx "Package build rejected ${package_name}: Commit (${commit}) not newer than one in yum repo (${yum_commit})!"
+    check_if_newer_than_published "${package_spec_commit}" "${yum_commit}"
+    local rv=$?
+    case $rv in
+      1)
+        errx "Package build rejected ${package_name}: Commit (${package_spec_commit}) not newer than one in yum repo (${yum_commit})!"
+        ;;
+      128)
+        echo "Package ${package_name}: Commit in rpm-spec-${package_name} (${package_spec_commit}) cannot compare to the one in Yum (${yum_commit}).  Probably transitioning to different rpm-spec-* repos?  Continuing."
+        ;;
+    esac
   fi
 
   update_yum_srpm
   update_yum_rpm
-  commit_repo "${package_name}" "${commit}"
+  commit_repo "${package_name}" "${package_spec_commit}"
 }
 
 readonly yumpath=/usr/local/yum
@@ -248,7 +256,7 @@ update_yum_rpm() {
 # run this in the git repo itself
 commit_repo() {
   local package_name="${1?}"
-  local commit="${2?}"
+  local package_spec_commit="${2?}"
 
   cd ${yumpath}
   # Only commit if any RPMs have changed
@@ -263,7 +271,7 @@ commit_repo() {
   git config --global user.name "Ribose Packaging"
   git config --global user.email packages@ribose.com
 
-  echo "${commit}" > "${yumpath}/commits/${package_name}"
+  echo "${package_spec_commit}" > "${yumpath}/commits/${package_name}"
 
   git add -A
 
