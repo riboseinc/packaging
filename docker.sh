@@ -84,7 +84,13 @@ main() {
     DOCKER_BASH_FLAGS="${DOCKER_BASH_FLAGS} -c"
   fi
 
-  docker run -it \
+  DOCKER_RUN_IT_FLAGS='-i'
+
+  if [[ -t 1 ]]; then
+    DOCKER_RUN_IT_FLAGS="${DOCKER_RUN_IT_FLAGS} -t"
+  fi
+
+  docker run ${DOCKER_RUN_IT_FLAGS} \
           -v "$(pwd)":/usr/local/packaging \
           -v "${PACKAGER_KEY_PATH}":"${container_key_path}":ro \
           -v ${volume_name}:/usr/local/yum \
