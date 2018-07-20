@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash -xe
 
 # shellcheck disable=SC2155
 # shellcheck disable=SC2164
@@ -23,10 +23,12 @@ update_repo() {
   local dest_path=$1
 
   echo "[update_repo] Updating yum repo at ${1}" >&2
-  createrepo --update --delta "${dest_path}"
+  createrepo --update --delta "${dest_path}" || \
+    errx "Cannot createrepo at ${dest_path}.  Aborting."
   echo "[update_repo] Signing repo at ${1}" >&2
   rm -f "${dest_path}/repodata/repomd.xml.asc"
-  gpg --detach-sign --armor "${dest_path}/repodata/repomd.xml"
+  gpg --detach-sign --armor "${dest_path}/repodata/repomd.xml" || \
+    errx "Cannot sign.  Aborting."
 }
 
 install_basic_packages() {
@@ -199,7 +201,8 @@ copy_to_repo_and_update() {
       fi
 
       echo "[copy_to_repo_and_update] Copying ${f} to ${dest_path}" >&2
-      cp "${f}" "${dest_path}"
+      cp "${f}" "${dest_path}" || \
+        errx "Cannot copy ${f} to ${dest_path}.  Aborting."
 
     done < <(find . -iname '*.rpm')
     popd
@@ -216,7 +219,8 @@ sign_packages() {
     pushd "${rpmpath}"
     while IFS= read -r -d '' f; do
       echo "[sign_packages] ${f}" >&2
-      "${scripts}/rpmsign.exp" "${f}"
+      "${scripts}/rpmsign.exp" "${f}" || \
+        errx "Cannot sign ${f}.  Aborting."
     done < <(find . -iname '*.rpm')
     popd
   fi
@@ -255,6 +259,7 @@ update_yum_rpm() {
 
 # run this in the git repo itself
 commit_repo() {
+  set -e
   local package_name="${1?}"
   local package_spec_commit="${2?}"
 
@@ -264,7 +269,7 @@ commit_repo() {
 
   if [ "${rpms_changed}" == "" ]; then
     echo "No packages have changed, exit now." >&2
-    exit 0;
+    exit 0
   fi
 
   # Do the git commit
@@ -274,7 +279,6 @@ commit_repo() {
   echo "${package_spec_commit}" > "${yumpath}/commits/${package_name}"
 
   git add -A
-
   git commit -m "${package_name}: Update RPMs and repodata"
 
   if [ "$DRYRUN" != "1" ]; then
@@ -282,4 +286,5 @@ commit_repo() {
   else
     echo "DRYRUN set to 1, NOT PUSHING CHANGES." >&2
   fi
+  set +e
 }
