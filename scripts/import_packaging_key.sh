@@ -1,3 +1,5 @@
+set -xe
+
 RIBOSE_PACKAGER_KEY_PATH=${1:-ribose-packager.key}
 
 gpg --import ${RIBOSE_PACKAGER_KEY_PATH}
