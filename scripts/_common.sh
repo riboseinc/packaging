@@ -58,15 +58,15 @@ fetch_spec_from_ribose_specs() {
   # It's not a lot anyway
   if [ ! -d ${rpmspec_path} ] && [ ! -d ${rpmspec_path}/.git ]; then
     git clone --quiet \
-	    https://github.com/riboseinc/"${rpmspec_package_name}" \
-	    "${rpmspec_path}" || errx "git clone"
+            https://github.com/riboseinc/"${rpmspec_package_name}" \
+            "${rpmspec_path}" || errx "git clone"
   else
     pushd "${rpmspec_path}" && \
-	    git clean -qdffx && \
-	    git fetch && \
-	    git checkout master && \
-	    git --hard origin/master && \
-	    popd
+            git clean -qdffx && \
+            git fetch && \
+            git checkout master && \
+            git --hard origin/master && \
+            popd
   fi
 
   cd "${rpmspec_path}"
