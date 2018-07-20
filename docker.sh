@@ -47,7 +47,7 @@ main() {
       usage
       ;;
     v)
-      local DOCKER_RUN_PACKAGE_SPEC_VOLUME=${OPTARG}
+      local DOCKER_RUN_PACKAGE_SPEC_VOLUME="-v ${OPTARG}"
       ;;
     *)
       usage
