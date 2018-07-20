@@ -126,7 +126,7 @@ pull_yum() {
     echo "[pull_yum] Cloning into ${yumpath}..." >&2
     mkdir -p ${yumpath}
     ls -al ${yumpath}
-    rm -rf "${yumpath}"/*
+    rm -rf "${yumpath:?}"/*
     pushd "${yumpath}"
     git clone --depth 1 https://github.com/riboseinc/yum .
     popd
@@ -159,13 +159,10 @@ check_if_newer_than_published() {
 
   # Check if commit is an ancestor
   git merge-base --is-ancestor "${yum_repo_commit}" "${rpm_spec_commit}"
-  if [[ $? -ne 0 ]]; then
-    popd
-    return 1
-  fi
-
+  local rv=$?
   popd
-  return 0
+
+  return $rv
 }
 
 # TODO: make this script understand whether to push SRPMS or not. Erlang SRPM
@@ -185,7 +182,7 @@ copy_to_repo_and_update() {
     mkdir -p "${dest_path}"
 
     pushd "${source_path}"
-    for f in $(find . -iname '*.rpm'); do
+    while IFS= read -r -d '' f; do
       local size=$( wc -c "${f}" | awk '{print $1}' )
       # If SRPM filesize exceeds max size, skip this step.
       if [[ "${size}" -gt "${max_file_size}" ]]; then
@@ -196,7 +193,7 @@ copy_to_repo_and_update() {
       echo "[copy_to_repo_and_update] Copying ${f} to ${dest_path}" >&2
       cp "${f}" "${dest_path}"
 
-    done
+    done < <(find . -iname '*.rpm')
     popd
 
     update_repo "${dest_path}"
@@ -209,10 +206,10 @@ sign_packages() {
 
   if [ -d "${rpmpath}" ]; then
     pushd "${rpmpath}"
-    for f in $(find . -iname '*.rpm'); do
+    while IFS= read -r -d '' f; do
       echo "[sign_packages] ${f}" >&2
       "${scripts}/rpmsign.exp" "${f}"
-    done
+    done < <(find . -iname '*.rpm')
     popd
   fi
 }
