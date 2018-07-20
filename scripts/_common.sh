@@ -163,8 +163,9 @@ check_if_newer_than_published() {
   pushd ${rpmspec_path}
   # Commits are same, no need to re-build
   if [ "${yum_repo_commit}" == "${rpm_spec_commit}" ]; then
+    echo "Commits are the same.  No need to rebuild."
     popd
-    return 1
+    return 0
   fi
 
   # Check if commit is an ancestor
