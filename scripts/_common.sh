@@ -105,8 +105,10 @@ the_works() {
   # Compare commits only if we already have a package
   if [[ -f "${yumpath}/commits/${package_name}" ]]; then
     local yum_commit=$(cat "${yumpath}/commits/${package_name}")
+    set +e
     check_if_newer_than_published "${package_spec_commit}" "${yum_commit}"
     local rv=$?
+    set -e
     case $rv in
       1)
         errx "Package build rejected ${package_name}: Commit (${package_spec_commit}) not newer than one in yum repo (${yum_commit})!"
@@ -178,8 +180,10 @@ check_if_newer_than_published() {
 
   # Check if commit is an ancestor.
   # Returns 128 if commits can't be compared.
+  set +e
   git merge-base --is-ancestor "${yum_repo_commit}" "${rpm_spec_commit}"
   local rv=$?
+  set -e
   popd
 
   return $rv
