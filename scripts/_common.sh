@@ -183,7 +183,6 @@ check_if_newer_than_published() {
   set +e
   git merge-base --is-ancestor "${yum_repo_commit}" "${rpm_spec_commit}"
   local rv=$?
-  set -e
   popd
 
   return $rv
