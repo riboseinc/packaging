@@ -81,7 +81,7 @@ fetch_spec_from_ribose_specs() {
 }
 
 the_works() {
-  readonly local package_name=$1
+  local package_name=$1
   [[ -z "${package_name}" ]] && errx "no package_name provided"
 
   setup_env
@@ -100,10 +100,6 @@ the_works() {
   echo "PACKAGE_PATH LS:"
   ls "${package_path}"
 
-  pushd "${package_path}" || errx "failed to enter package path"
-  "${package_path}"/prepare.sh || errx "failed to prepare"
-  popd
-
   pull_yum
 
   # Compare commits only if we already have a package
@@ -114,6 +110,11 @@ the_works() {
     case $rv in
       1)
         errx "Package build rejected ${package_name}: Commit (${package_spec_commit}) not newer than one in yum repo (${yum_commit})!"
+	return 1
+        ;;
+      2)
+        echo "Package ${package_name}: Commit in rpm-spec-${package_name} (${package_spec_commit}): No need to rebuild."
+	return 0
         ;;
       128)
         echo "Package ${package_name}: Commit in rpm-spec-${package_name} (${package_spec_commit}) cannot compare to the one in Yum (${yum_commit}).  Probably transitioning to different rpm-spec-* repos?  Continuing."
@@ -121,6 +122,13 @@ the_works() {
     esac
   fi
 
+  # Now build the actual packages.
+  # The name 'prepare' actually means prepare the package to upload.
+  pushd "${package_path}" || errx "failed to enter package path"
+  "${package_path}"/prepare.sh || errx "failed to prepare"
+  popd
+
+  pull_yum
   update_yum_srpm
   update_yum_rpm
   commit_repo "${package_name}" "${package_spec_commit}"
@@ -168,7 +176,8 @@ check_if_newer_than_published() {
     return 0
   fi
 
-  # Check if commit is an ancestor
+  # Check if commit is an ancestor.
+  # Returns 128 if commits can't be compared.
   git merge-base --is-ancestor "${yum_repo_commit}" "${rpm_spec_commit}"
   local rv=$?
   popd
