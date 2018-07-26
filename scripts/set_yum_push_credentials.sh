@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 GIT_REPO=/usr/local/yum
 GIT_HTTPS_USERNAME="$1"
@@ -38,6 +38,6 @@ encoded_username=$(urlencode "${GIT_HTTPS_USERNAME}")
 encoded_password=$(urlencode "${GIT_HTTPS_PASSWORD}")
 
 cat <<EOF>> ~/.git-credentials
-https://${encoded_username}:${encoded_password}@github.com
+https://${encoded_username?}:${encoded_password?}@github.com
 EOF
 
