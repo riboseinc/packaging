@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash -e
 
 GIT_REPO=/usr/local/yum
 GIT_HTTPS_USERNAME="$1"
