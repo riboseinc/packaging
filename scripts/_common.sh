@@ -295,7 +295,8 @@ commit_repo() {
   git commit -m "${package_name}: Update RPMs and repodata"
 
   if [ "$DRYRUN" != "1" ]; then
-    git push
+    git pull --rebase && \
+      git push
   else
     echo "DRYRUN set to 1, NOT PUSHING CHANGES." >&2
   fi
