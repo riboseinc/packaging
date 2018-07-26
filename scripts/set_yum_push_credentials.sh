@@ -37,7 +37,6 @@ git config --global credential.helper store
 encoded_username=$(urlencode "${GIT_HTTPS_USERNAME}")
 encoded_password=$(urlencode "${GIT_HTTPS_PASSWORD}")
 
-cat <<EOF>> ~/.git-credentials
+cat > ~/.git-credentials <<EOF
 https://${encoded_username?}:${encoded_password?}@github.com
 EOF
-
