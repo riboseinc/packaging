@@ -1,4 +1,4 @@
-set -xe
+#!/bin/bash -xe
 
 RIBOSE_PACKAGER_KEY_PATH=${1:-ribose-packager.key}
 
@@ -16,4 +16,3 @@ cat <<MACROS >~/.rpmmacros
 %packager ${PACKAGER}
 %_topdir $HOME/rpmbuild
 MACROS
-
