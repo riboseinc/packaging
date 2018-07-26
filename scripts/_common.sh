@@ -205,7 +205,7 @@ copy_to_repo_and_update() {
     mkdir -p "${dest_path}"
 
     pushd "${source_path}"
-    while IFS= read -r -d '' f; do
+    while IFS= read -r f; do
       local size=$( wc -c "${f}" | awk '{print $1}' )
       # If SRPM filesize exceeds max size, skip this step.
       if [[ "${size}" -gt "${max_file_size}" ]]; then
@@ -230,7 +230,7 @@ sign_packages() {
 
   if [ -d "${rpmpath}" ]; then
     pushd "${rpmpath}"
-    while IFS= read -r -d '' f; do
+    while IFS= read -r f; do
       echo "[sign_packages] ${f}" >&2
       "${scripts}/rpmsign.exp" "${f}" || \
         errx "Cannot sign ${f}.  Aborting."
