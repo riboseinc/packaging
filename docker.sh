@@ -2,12 +2,12 @@
 
 #
 # Environment variables can be passed to the prepare.sh script by
-# specifying the env var keys with a comma-separated list, like 
+# specifying the env var keys with a comma-separated list, like
 # so:
 #
 #   ENVS=key1,key2,...
 #
-# Current values of the env vars will be propagated as per Docker-run's 
+# Current values of the env vars will be propagated as per Docker-run's
 # documentation.  So, if you have the following:
 #
 #   export key1=hello
@@ -49,16 +49,16 @@ main() {
   while getopts ":v:u:p:k:dh" o; do
     case "${o}" in
     d)
-      readonly local DRYRUN=1
+      local -r DRYRUN=1
       ;;
     k)
-      readonly local PACKAGER_KEY_PATH=${OPTARG}
+      local -r PACKAGER_KEY_PATH=${OPTARG}
       ;;
     u)
-      readonly local REPO_USERNAME=${OPTARG}
+      local -r REPO_USERNAME=${OPTARG}
       ;;
     p)
-      readonly local REPO_PASSWORD=${OPTARG}
+      local -r REPO_PASSWORD=${OPTARG}
       ;;
     h)
       usage
@@ -72,7 +72,7 @@ main() {
     esac
   done
 
-  shift $(($OPTIND - 1))
+  shift $((OPTIND - 1))
 
   PACKAGE_NAME=$1
   if [ "x$PACKAGE_NAME" != "x" ]; then
@@ -83,7 +83,7 @@ main() {
     fi
   fi
 
-  [[ ! -z "$DOCKER_RUN_PACKAGE_SPEC_VOLUME" ]] || \
+  [[ -n "$DOCKER_RUN_PACKAGE_SPEC_VOLUME" ]] || \
     DOCKER_RUN_PACKAGE_SPEC_VOLUME=""
 
   [[ ! "$PACKAGER_KEY_PATH" ]] && \
@@ -95,7 +95,7 @@ main() {
   [[ ! "$REPO_PASSWORD" ]] && \
     usage
 
-  DOCKER_BASH_FLAGS=-l
+  DOCKER_BASH_FLAGS=(-l)
 
   volume_name=ribose-yum
   docker volume create ${volume_name}
@@ -103,41 +103,41 @@ main() {
   container_key_path=/tmp/packager.key
 
   # TODO: clean this up...
-  if [ "$DOCKER_BASH_COMMAND" != "" ]; then
+  if [ -n "$DOCKER_BASH_COMMAND" ]; then
     DOCKER_BASH_EXTRA="${DOCKER_BASH_COMMAND}"
-    DOCKER_BASH_FLAGS="${DOCKER_BASH_FLAGS} -c"
+    DOCKER_BASH_FLAGS+=(-c)
   fi
 
-  DOCKER_RUN_IT_FLAGS='-i'
+  DOCKER_RUN_IT_FLAGS=(-i)
 
   if [[ -t 1 ]]; then
-    DOCKER_RUN_IT_FLAGS="${DOCKER_RUN_IT_FLAGS} -t"
+    DOCKER_RUN_IT_FLAGS+=(-t)
   fi
 
   # DOCKER_RUN_PACKAGE_SPEC_VOLUME="-v "$(pwd)/..":/usr/local/rpm-specs/package"
 
   # Parse out env var names intended for passing into container:
   envs=()
-  if [[ ! -z "${ENVS:-}" ]]; then
+  if [[ -n "${ENVS:-}" ]]; then
     IFS=, read -r -a envs <<< "${ENVS}"
   fi
 
   # Compose envs strings for `docker run`:
-  docker_env_opts=''
+  docker_env_opts=()
   for env_key in "${envs[@]}"; do
-    docker_env_opts="${docker_env_opts} -e ${env_key}"
+    docker_env_opts+=(-e "${env_key}")
   done
 
-  docker run ${DOCKER_RUN_IT_FLAGS} \
+  docker run "${DOCKER_RUN_IT_FLAGS[@]}" \
     -v "$(pwd)":/usr/local/packaging \
-    ${DOCKER_RUN_PACKAGE_SPEC_VOLUME} \
+    "${DOCKER_RUN_PACKAGE_SPEC_VOLUME}" \
     -v "${PACKAGER_KEY_PATH}":"${container_key_path}":ro \
     -v ${volume_name}:/usr/local/yum \
-    ${docker_env_opts} \
+    "${docker_env_opts[@]}" \
     -e PACKAGER_KEY_PATH=${container_key_path} \
     -e REPO_USERNAME="${REPO_USERNAME}" \
     -e REPO_PASSWORD="${REPO_PASSWORD}" \
-    centos:7 bash ${DOCKER_BASH_FLAGS} "${DOCKER_BASH_EXTRA}"
+    centos:7 bash "${DOCKER_BASH_FLAGS[@]}" "${DOCKER_BASH_EXTRA}"
 
 }
 
