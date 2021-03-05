@@ -2,7 +2,7 @@
 
 RIBOSE_PACKAGER_KEY_PATH=${1:-ribose-packager.key}
 
-gpg --import ${RIBOSE_PACKAGER_KEY_PATH}
+gpg --import "${RIBOSE_PACKAGER_KEY_PATH}"
 
 # Edit your identities.
 PACKAGER="${PACKAGER:-Ribose Packaging <packages@ribose.com>}"

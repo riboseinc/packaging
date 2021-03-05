@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-GIT_REPO=/usr/local/yum
+# GIT_REPO=/usr/local/yum
 GIT_HTTPS_USERNAME="$1"
 GIT_HTTPS_PASSWORD="$2"
 
@@ -14,7 +14,7 @@ urlencode() {
     local c="${1:i:1}"
     case $c in
       [a-zA-Z0-9.~_-])
-        printf "$c"
+        printf "%s" "$c"
         ;;
       *)
         printf '%%%02X' "'$c"

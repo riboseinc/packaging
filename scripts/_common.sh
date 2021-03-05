@@ -4,7 +4,7 @@
 # shellcheck disable=SC2164
 
 errx() {
-  readonly __progname=$(basename "${BASH_SOURCE}")
+  readonly __progname=$(basename "${BASH_SOURCE[0]}")
   echo -e "${__progname}: $*" >&2
   # return 1
   exit 1
@@ -39,7 +39,7 @@ install_basic_packages() {
 }
 
 set_creds_and_key() {
-  local scripts=$(dirname "$(readlink -f "${BASH_SOURCE}")")
+  local scripts=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
   "${scripts}"/set_yum_push_credentials.sh "${REPO_USERNAME}" "${REPO_PASSWORD}"
   "${scripts}"/import_packaging_key.sh "${PACKAGER_KEY_PATH}"
 }
@@ -49,8 +49,8 @@ readonly rpmspec_path=/usr/local/rpm-specs/package
 readonly rpmspecs_path=/usr/local/rpm-specs
 
 fetch_spec_from_ribose_specs() {
-  readonly local p_name=$1
-  readonly local p_path=$2
+  local -r p_name=$1
+  local -r p_path=$2
   [ -z "${p_name}" ] && errx "no p_name provided to $0"
   [ -z "${p_path}" ] && errx "no p_path provided to $0"
 
@@ -225,7 +225,7 @@ copy_to_repo_and_update() {
 }
 
 sign_packages() {
-  local scripts=$(dirname "$(readlink -f "${BASH_SOURCE}")")
+  local scripts=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
   local rpmpath=$1
 
   if [ -d "${rpmpath}" ]; then
