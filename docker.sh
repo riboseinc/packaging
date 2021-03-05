@@ -45,6 +45,7 @@ usage() {
 }
 
 main() {
+  local DOCKER_RUN_PACKAGE_SPEC_VOLUME=()
 
   while getopts ":v:u:p:k:dh" o; do
     case "${o}" in
@@ -64,7 +65,7 @@ main() {
       usage
       ;;
     v)
-      local DOCKER_RUN_PACKAGE_SPEC_VOLUME="-v ${OPTARG}"
+      DOCKER_RUN_PACKAGE_SPEC_VOLUME=(-v "${OPTARG}")
       ;;
     *)
       usage
@@ -82,9 +83,6 @@ main() {
       DOCKER_BASH_COMMAND=". /usr/local/packaging/scripts/_common.sh; export DRYRUN=1; the_works ${1}; bash"
     fi
   fi
-
-  [[ -n "$DOCKER_RUN_PACKAGE_SPEC_VOLUME" ]] || \
-    DOCKER_RUN_PACKAGE_SPEC_VOLUME=""
 
   [[ ! "$PACKAGER_KEY_PATH" ]] && \
     usage
@@ -130,7 +128,7 @@ main() {
 
   docker run "${DOCKER_RUN_IT_FLAGS[@]}" \
     -v "$(pwd)":/usr/local/packaging \
-    "${DOCKER_RUN_PACKAGE_SPEC_VOLUME}" \
+    "${DOCKER_RUN_PACKAGE_SPEC_VOLUME[@]}" \
     -v "${PACKAGER_KEY_PATH}":"${container_key_path}":ro \
     -v ${volume_name}:/usr/local/yum \
     "${docker_env_opts[@]}" \
