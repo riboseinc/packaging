@@ -73,7 +73,12 @@ fetch_spec_from_ribose_specs() {
 
   cd "${rpmspec_path}"
   git submodule update --init >/dev/null
-  cp -ra "${rpmspec_path}/common"/* "${rpmspecs_path}/" || return 1
+
+  # XXX: common/ has been obsoleted?  If so, remove the following 'cp' block.
+  if [[ -d "${rpmspec_path}/common" ]]
+  then
+    cp -ra "${rpmspec_path}/common"/* "${rpmspecs_path}/" || return 1
+  fi
 
   local package_spec_commit="$(git log -1 --format=format:%H)"
   echo "$package_spec_commit"
